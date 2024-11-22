@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "23928970133",
+    "project_id": "symphony-praksa",
+    "storage_bucket": "symphony-praksa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:23928970133:android:4d999000088b2113ad749c",
+        "android_client_info": {
+          "package_name": "com.example.worktimechecker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "23928970133-qhrmou09cbjb9pm7j677heecnlpar31i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.worktimechecker",
+            "certificate_hash": "dba2ba5a0e67de8e79d7d3e4a4163ffca3105b93"
+          }
+        },
+        {
+          "client_id": "23928970133-o8r75h6c3vbqakv0o19b4ta2177qgu3r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZOvIIw_c-Axl08z7oIpdxtIN-_2Ejtso"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "23928970133-baj50b8892jh4spfkdl54b1o7ueh3hes.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
