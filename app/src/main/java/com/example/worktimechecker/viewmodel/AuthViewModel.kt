@@ -14,7 +14,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.tasks.await
 
-class Auth : ViewModel() {
+class AuthViewModel : ViewModel() {
 
     private val auth : FirebaseAuth = FirebaseAuth.getInstance()
 
@@ -76,6 +76,10 @@ class Auth : ViewModel() {
             _authState.value = AuthState.Error("Not a valid email adress")
             return
         }
+        else if(password.length <= 6){
+            _authState.value = AuthState.Error("Password too short")
+            return
+        }
 
         _authState.value = AuthState.Loading
         auth.createUserWithEmailAndPassword(email, password)
@@ -90,6 +94,7 @@ class Auth : ViewModel() {
     }
 
     fun signOut(){
+        _authState.value = AuthState.Loading
         auth.signOut()
         _authState.value = AuthState.Unauthenticated
     }

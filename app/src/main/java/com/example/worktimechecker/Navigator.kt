@@ -8,11 +8,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.worktimechecker.view.HomeScreen
 import com.example.worktimechecker.view.LogInScreen
 import com.example.worktimechecker.view.SignUpScreen
-import com.example.worktimechecker.viewmodel.Auth
+import com.example.worktimechecker.viewmodel.AuthViewModel
+import com.example.worktimechecker.viewmodel.WorkSessionViewModel
 import com.example.worktimechecker.viewmodel.UsersViewModel
 
 @Composable
-fun Navigator(modifier: Modifier = Modifier, authViewModel: Auth, usersViewModel: UsersViewModel){
+fun Navigator(modifier: Modifier = Modifier, authViewModel: AuthViewModel, usersViewModel: UsersViewModel, workSessionViewModel: WorkSessionViewModel){
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login", builder = {
@@ -23,7 +24,7 @@ fun Navigator(modifier: Modifier = Modifier, authViewModel: Auth, usersViewModel
             SignUpScreen(modifier, navController, authViewModel, usersViewModel)
         }
         composable("home"){
-            HomeScreen(modifier, navController, authViewModel, usersViewModel)
+            HomeScreen(modifier, navController, authViewModel, usersViewModel, workSessionViewModel)
         }
     })
 }

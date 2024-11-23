@@ -1,6 +1,5 @@
 package com.example.worktimechecker.view
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,12 +24,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.worktimechecker.viewmodel.Auth
+import com.example.worktimechecker.viewmodel.AuthViewModel
 import com.example.worktimechecker.viewmodel.AuthState
 import com.example.worktimechecker.viewmodel.UsersViewModel
 
 @Composable
-fun SignUpScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: Auth, usersViewModel: UsersViewModel) {
+fun SignUpScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel, usersViewModel: UsersViewModel) {
     var email by remember {
         mutableStateOf("")
     }
@@ -49,10 +49,19 @@ fun SignUpScreen(modifier: Modifier = Modifier, navController: NavController, au
     val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
 
+    var isSigningUp by remember { mutableStateOf(false) }
+
     LaunchedEffect(authState.value) {
         when(authState.value){
             is AuthState.Authenticated -> navController.navigate("home")
-            is AuthState.Error -> Toast.makeText(context, (authState.value as AuthState.Error).message, Toast.LENGTH_LONG).show()
+            is AuthState.Error -> {
+                Toast.makeText(
+                    context,
+                    (authState.value as AuthState.Error).message,
+                    Toast.LENGTH_LONG
+                ).show()
+                isSigningUp = false
+            }
             else -> Unit
         }
     }
@@ -62,73 +71,82 @@ fun SignUpScreen(modifier: Modifier = Modifier, navController: NavController, au
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ){
-        Text(text = "Signup Page", fontSize = 32.sp)
+        if (isSigningUp) {
+            CircularProgressIndicator()
+        } else {
+            Text(text = "Signup", fontSize = 32.sp)
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = {
-                name = it
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                },
+                label = {
+                    Text(text = "Name")
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = lastName,
+                onValueChange = {
+                    lastName = it
+                },
+                label = {
+                    Text(text = "Last name")
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = {
+                    email = it
+                },
+                label = {
+                    Text(text = "Email")
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    password = it
+                },
+                label = {
+                    Text(text = "Password")
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = {
+                isSigningUp = true
+                authViewModel.signup(email, password)
+                if(email.isNotEmpty()) {
+                    usersViewModel.createUser("$name $lastName", email)
+                }
+                else{
+                    isSigningUp = false
+                }
             },
-            label = {
-                Text(text = "Name")
+                enabled = authState.value != AuthState.Loading) {
+                Text(text = "Create account")
             }
-        )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = lastName,
-            onValueChange = {
-                lastName = it
-            },
-            label = {
-                Text(text = "Last name")
+            TextButton(onClick = {
+                navController.navigate("login")
+            }) {
+                Text(text = "Already have an account? Log in")
             }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = {
-                email = it
-            },
-            label = {
-                Text(text = "Email")
-            }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                password = it
-            },
-            label = {
-                Text(text = "Password")
-            }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = {
-            Log.d("govna", name+lastName)
-            usersViewModel.createUser("$name $lastName", email)
-            authViewModel.signup(email, password)
-        },
-            enabled = authState.value != AuthState.Loading) {
-            Text(text = "Create account")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(onClick = {
-            navController.navigate("login")
-        }) {
-            Text(text = "Already have an account? Log in")
         }
     }
 }

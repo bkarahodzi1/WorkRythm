@@ -23,19 +23,7 @@ class UsersViewModel : ViewModel() {
     private var _user = MutableStateFlow<Users?>(null)
     var user: StateFlow<Users?> = _user
 
-    private val auth : FirebaseAuth = FirebaseAuth.getInstance()
     private val db = Firebase.firestore
-
-    /*init {
-        viewModelScope.launch {
-            val email = auth.currentUser?.email
-            if (email != null) {
-                getUserByEmail(email)
-            } else {
-                _user.value = null // No authenticated user
-            }
-        }
-    }*/
     
     fun getUsers(){
         db.collection("users")
@@ -71,13 +59,15 @@ class UsersViewModel : ViewModel() {
     }
 
     fun createUser(displayName: String, email: String){
-        val user = hashMapOf(
+        val newUser = hashMapOf(
             "displayName" to displayName,
             "email" to email
         )
 
         db.collection("users").document(email)
-            .set(user)
+            .set(newUser)
+
+        _user.value = Users(newUser["displayName"]!!,newUser["email"]!!)
     }
 
     fun signOutUser(){
