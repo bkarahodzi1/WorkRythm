@@ -74,7 +74,7 @@ fun SignUpScreen(modifier: Modifier = Modifier, navController: NavController, au
         if (isSigningUp) {
             CircularProgressIndicator()
         } else {
-            Text(text = "Signup", fontSize = 32.sp)
+            Text(text = "Sign up", fontSize = 32.sp)
 
             Spacer(modifier = Modifier.height(16.dp))
 

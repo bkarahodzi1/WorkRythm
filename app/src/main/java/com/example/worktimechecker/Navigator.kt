@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.worktimechecker.view.HomeScreen
 import com.example.worktimechecker.view.LogInScreen
 import com.example.worktimechecker.view.SignUpScreen
+import com.example.worktimechecker.view.StatisticsScreen
 import com.example.worktimechecker.viewmodel.AuthViewModel
 import com.example.worktimechecker.viewmodel.WorkSessionViewModel
 import com.example.worktimechecker.viewmodel.UsersViewModel
@@ -25,6 +26,9 @@ fun Navigator(modifier: Modifier = Modifier, authViewModel: AuthViewModel, users
         }
         composable("home"){
             HomeScreen(modifier, navController, authViewModel, usersViewModel, workSessionViewModel)
+        }
+        composable("statistics"){
+            StatisticsScreen(modifier, navController, authViewModel, usersViewModel, workSessionViewModel)
         }
     })
 }
