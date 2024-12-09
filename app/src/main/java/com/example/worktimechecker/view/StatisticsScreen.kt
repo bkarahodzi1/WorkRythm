@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -206,7 +207,62 @@ fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController
                     verticalArrangement = Arrangement.Center // Aligns content vertically within the column
                 )
                     {
-                        Text(text = "No data", fontSize = 32.sp)
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text(text = "", fontSize = 16.sp)
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .fillMaxSize(),
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            Box {
+                                Row(
+                                    horizontalArrangement = Arrangement.Start,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable { isDropDownExpanded.value = true }
+                                ) {
+                                    Text(text = times[workSessionsState])
+                                    Icon(
+                                        imageVector = Icons.Filled.ArrowDropDown,
+                                        contentDescription = "DropDown Icon"
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = isDropDownExpanded.value,
+                                    onDismissRequest = { isDropDownExpanded.value = false }) {
+                                    times.forEachIndexed { index, time ->
+                                        DropdownMenuItem(
+                                            text = { Text(text = time) },
+                                            onClick = {
+                                                isDropDownExpanded.value = false
+                                                if(index == 0){
+                                                    workSessionViewModel.setSessionsForWeek(user!!.email)
+                                                }
+                                                else if(index == 1){
+                                                    workSessionViewModel.setSessionsForThisMonth(user!!.email)
+                                                }
+                                                else if(index == 2){
+                                                    workSessionViewModel.setSessionsForLastMonth(user!!.email)
+                                                }
+                                                else if(index == 3){
+                                                    workSessionViewModel.setSessions(user!!.email)
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = "No data",
+                                fontSize = 32.sp,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                        }
                     }
                 }
                 else{

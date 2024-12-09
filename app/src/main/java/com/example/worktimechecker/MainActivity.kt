@@ -1,5 +1,7 @@
 package com.example.worktimechecker
 
+import android.app.NotificationManager
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent

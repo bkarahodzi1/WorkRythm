@@ -1,6 +1,13 @@
 package com.example.worktimechecker.view
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
@@ -34,6 +43,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -51,21 +61,26 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.worktimechecker.R
+import com.example.worktimechecker.model.AlarmItem
+import com.example.worktimechecker.AndroidAlarmScheduler
 import com.example.worktimechecker.viewmodel.AuthViewModel
 import com.example.worktimechecker.viewmodel.AuthState
 import com.example.worktimechecker.viewmodel.WorkSessionViewModel
 import com.example.worktimechecker.viewmodel.UsersViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
@@ -93,8 +108,30 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
         mutableIntStateOf(0)
     }
 
+    val scheduler = AndroidAlarmScheduler(context)
+    var alarmItem : AlarmItem? = null
+
+    var isEnabled by remember{ mutableStateOf(false)}
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            hasNotificationPermission = isGranted
+            if(hasNotificationPermission)
+                isEnabled = true
+        }
+    )
 
 
     LaunchedEffect(authState.value) {
@@ -113,6 +150,8 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
         if(workSessionViewModel.checkPaused(user!!.email)){
             isPaused = true
         }
+        if(hasNotificationPermission)
+            isEnabled = true
         isReady = true
         isSigningOut = false
     }
@@ -140,51 +179,100 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                     ){
 
                     }
-                        NavigationDrawerItem(label = {Text(text = "Home")},
-                            selected = true,
-                            onClick = {
-                                navController.navigate("home")
-                                selectedItemIndex = 0 },
-                            icon = {
-                                Icon(
-                                    imageVector = if (selectedItemIndex == 0) {
-                                        Icons.Filled.Home
-                                    } else Icons.Outlined.Home,
-                                    contentDescription = "Home button"
-                                )
+                    NavigationDrawerItem(label = {Text(text = "Home")},
+                        selected = true,
+                        onClick = {
+                            navController.navigate("home")
+                            selectedItemIndex = 0 },
+                        icon = {
+                            Icon(
+                                imageVector = if (selectedItemIndex == 0) {
+                                    Icons.Filled.Home
+                                } else Icons.Outlined.Home,
+                                contentDescription = "Home button"
+                            )
+                        }
+                    )
+                    NavigationDrawerItem(label = {Text(text = "Statistics")},
+                        selected = false,
+                        onClick = {
+                            selectedItemIndex = 2
+                            isSigningOut = true
+                            navController.navigate("statistics") },
+                        icon = {
+                            Image(
+                                painter = painterResource(id = R.drawable.piechart),
+                                contentDescription = "Statistics",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    )
+                    NavigationDrawerItem(label = {Text(text = "Sign out")},
+                        selected = false,
+                        onClick = {
+                            selectedItemIndex = 1
+                            isSigningOut = true
+                            authViewModel.signOut()
+                            usersViewModel.signOutUser() //workSessionViewModel.removeSessions()
+                                  },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = "Sign out button"
+                            )
+                        }
+                    )
+                    Row(
+                        modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ){
+                        var showDialog by remember { mutableStateOf(false) }
+                        if(showDialog){
+                            AlertDialog(
+                                onDismissRequest = { showDialog = false },
+                                confirmButton = {
+                                    Button(onClick = {
+                                        showDialog = false
+                                        // Navigate to app settings
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.parse("package:${context.packageName}")
+                                        }
+                                        context.startActivity(intent)
+                                    }) {
+                                        Text("Go to Settings")
+                                    }
+                                },
+                                dismissButton = {
+                                    Button(onClick = { showDialog = false }) {
+                                        Text("Cancel")
+                                    }
+                                },
+                                title = { Text("Revoke Permission") },
+                                text = { Text("To disable the notification permission, please go to app settings and revoke the permission manually.") }
+                            )
+                        }
+                        Switch(
+                            modifier = Modifier.scale(0.75f),
+                            checked = isEnabled,
+                            onCheckedChange = {
+                                if(isEnabled){
+                                    showDialog = true
+                                }
+                                else
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
                         )
-                        NavigationDrawerItem(label = {Text(text = "Statistics")},
-                            selected = false,
-                            onClick = {
-                                selectedItemIndex = 2
-                                isSigningOut = true
-                                navController.navigate("statistics")
-                            },
-                            icon = {
-                                Image(
-                                    painter = painterResource(id = R.drawable.piechart),
-                                    contentDescription = "Statistics",
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        )
-                        NavigationDrawerItem(label = {Text(text = "Sign out")},
-                            selected = false,
-                            onClick = {
-                                selectedItemIndex = 1
-                                isSigningOut = true
-                                authViewModel.signOut()
-                                usersViewModel.signOutUser()
-                                //workSessionViewModel.removeSessions()
-                                      },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                    contentDescription = "Sign out button"
-                                )
-                            }
-                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(text = if(isEnabled){
+                            "Disable Notifications"
+                        }
+                        else{
+                            "Enable Notifications"
+                        })
+                    }
                 }
             }
         ) {
@@ -264,6 +352,14 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
+                                else if (hasNotificationPermission){
+                                    alarmItem = AlarmItem(
+                                        time = LocalDateTime.now()
+                                            .plusSeconds(5),
+                                        message = "Consider taking a break"
+                                    )
+                                    alarmItem?.let(scheduler::schedule)
+                                }
                             }
                         },
                         enabled = authState.value != AuthState.Loading
@@ -296,6 +392,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                     }
                                     else{
                                         isPaused = true
+                                        alarmItem?.let(scheduler::cancel)
                                     }
                                 } },
                             enabled = authState.value != AuthState.Loading
@@ -312,7 +409,14 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                 isPaused = false
                                 coroutineScope.launch {
                                     workSessionViewModel.continueTime(authViewModel.getCurrentUser()?.email.toString(),  LocalTime.now().toNanoOfDay() / 1000000)
-                                } },
+                                }
+                                alarmItem = AlarmItem(
+                                    time = LocalDateTime.now()
+                                        .plusSeconds(5),
+                                    message = "test"
+                                )
+                                alarmItem?.let(scheduler::schedule)
+                                      },
                             enabled = authState.value != AuthState.Loading
                         ) {
                             Text(text = "Continue working")
@@ -343,6 +447,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                 }
                                 else if(isPaused){
                                     workSessionViewModel.continueTime(authViewModel.getCurrentUser()?.email.toString(),  LocalTime.now().toNanoOfDay() / 1000000)
+                                    isPaused = false
                                 }
                             }
                         },
@@ -381,7 +486,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                 }
                             }
 
-                            else if(workSession2!!.pauseStartTimes.isNotEmpty()){
+                            else if(workSession2!!.pausedForTimes.isNotEmpty()){
                                 Row(
                                     modifier = Modifier.fillMaxWidth(0.65f),
                                     horizontalArrangement = Arrangement.SpaceBetween

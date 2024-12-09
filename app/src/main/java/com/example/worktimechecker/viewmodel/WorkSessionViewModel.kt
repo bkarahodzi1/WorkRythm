@@ -177,12 +177,15 @@ class WorkSessionViewModel: ViewModel() {
 
     suspend fun continueTime(currentUserEmail: String, currentTime: Long){
 
-        val document = db.collection("users").document(currentUserEmail)
-            .collection("workSessions").document(LocalDate.now().toString())
-            .get()
-            .await()
-
-        _workSession.value = document.toObject()
+        try{
+            val document = db.collection("users").document(currentUserEmail)
+                .collection("workSessions").document(LocalDate.now().toString())
+                .get()
+                .await()
+            _workSession.value = document.toObject()
+        }catch (e: Exception){
+            val e2 = e.message
+        }
 
         val newPause = hashMapOf(
             "pauseStartTime" to 0L,
