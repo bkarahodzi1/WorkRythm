@@ -1,18 +1,13 @@
 package com.example.worktimechecker.viewmodel
 
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.worktimechecker.model.Users
 import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class UsersViewModel : ViewModel() {
@@ -24,7 +19,7 @@ class UsersViewModel : ViewModel() {
     var user: StateFlow<Users?> = _user
 
     private val db = Firebase.firestore
-    
+
     fun getUsers(){
         db.collection("users")
             .addSnapshotListener{ value, error ->
@@ -64,8 +59,18 @@ class UsersViewModel : ViewModel() {
             "email" to email
         )
 
+        val newWorkSession = hashMapOf(
+            "date" to "1900-01-01",
+            "startTime" to 0,
+            "endTime" to 0
+        )
+
         db.collection("users").document(email)
             .set(newUser)
+
+        db.collection("users").document(email)
+            .collection("workSessions").document("1900-01-01")
+            .set(newWorkSession)
 
         _user.value = Users(newUser["displayName"]!!,newUser["email"]!!)
     }

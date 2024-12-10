@@ -5,7 +5,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.outlined.ExitToApp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.Home
@@ -41,7 +39,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +51,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,7 +65,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel, usersViewModel: UsersViewModel, workSessionViewModel: WorkSessionViewModel){
-    val authState = authViewModel.authState.observeAsState()
     val user by usersViewModel.user.collectAsStateWithLifecycle()
     val workSessions by workSessionViewModel.workSessions.collectAsStateWithLifecycle()
     val workSessionsState by workSessionViewModel.workSessionsState.collectAsStateWithLifecycle()
@@ -77,8 +74,8 @@ fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController
     if(workSessions.isNotEmpty())
         workDuration = workSessions.sumOf { it.totalTime } / workSessions.size
 
-    var breakDuration: Long = 0L
-    var breaks: Int = 0
+    var breakDuration = 0L
+    var breaks = 0
     for (work in workSessions){
         if(work.pausedForTimes.isNotEmpty()) {
             breakDuration += work.pausedForTimes.sum()
@@ -205,7 +202,7 @@ fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController
                     modifier = Modifier.fillMaxHeight(),
                     horizontalAlignment = Alignment.CenterHorizontally, // Aligns content horizontally
                     verticalArrangement = Arrangement.Center // Aligns content vertically within the column
-                )
+                    )
                     {
                         Spacer(modifier = Modifier.height(24.dp))
 
@@ -216,7 +213,7 @@ fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController
                         Row(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
-                                .fillMaxSize(),
+                                .fillMaxWidth(),
                             verticalAlignment = Alignment.Top,
                             horizontalArrangement = Arrangement.Start
                         ) {
@@ -240,27 +237,39 @@ fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController
                                             text = { Text(text = time) },
                                             onClick = {
                                                 isDropDownExpanded.value = false
-                                                if(index == 0){
-                                                    workSessionViewModel.setSessionsForWeek(user!!.email)
-                                                }
-                                                else if(index == 1){
-                                                    workSessionViewModel.setSessionsForThisMonth(user!!.email)
-                                                }
-                                                else if(index == 2){
-                                                    workSessionViewModel.setSessionsForLastMonth(user!!.email)
-                                                }
-                                                else if(index == 3){
-                                                    workSessionViewModel.setSessions(user!!.email)
+                                                when (index) {
+                                                    0 -> {
+                                                        workSessionViewModel.setSessionsForWeek(user!!.email)
+                                                    }
+                                                    1 -> {
+                                                        workSessionViewModel.setSessionsForThisMonth(user!!.email)
+                                                    }
+                                                    2 -> {
+                                                        workSessionViewModel.setSessionsForLastMonth(user!!.email)
+                                                    }
+                                                    3 -> {
+                                                        workSessionViewModel.setSessions(user!!.email)
+                                                    }
                                                 }
                                             }
                                         )
                                     }
                                 }
                             }
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        )
+                        {
                             Text(
                                 text = "No data",
                                 fontSize = 32.sp,
-                                modifier = Modifier.align(Alignment.CenterVertically)
+                                modifier = Modifier
+                                    .align(Alignment.CenterVertically),
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -299,17 +308,19 @@ fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController
                                         text = { Text(text = time) },
                                         onClick = {
                                             isDropDownExpanded.value = false
-                                            if(index == 0){
-                                                workSessionViewModel.setSessionsForWeek(user!!.email)
-                                            }
-                                            else if(index == 1){
-                                                workSessionViewModel.setSessionsForThisMonth(user!!.email)
-                                            }
-                                            else if(index == 2){
-                                                workSessionViewModel.setSessionsForLastMonth(user!!.email)
-                                            }
-                                            else if(index == 3){
-                                                workSessionViewModel.setSessions(user!!.email)
+                                            when (index) {
+                                                0 -> {
+                                                    workSessionViewModel.setSessionsForWeek(user!!.email)
+                                                }
+                                                1 -> {
+                                                    workSessionViewModel.setSessionsForThisMonth(user!!.email)
+                                                }
+                                                2 -> {
+                                                    workSessionViewModel.setSessionsForLastMonth(user!!.email)
+                                                }
+                                                3 -> {
+                                                    workSessionViewModel.setSessions(user!!.email)
+                                                }
                                             }
                                         }
                                     )
@@ -401,8 +412,6 @@ fun StatisticsScreen(modifier: Modifier = Modifier, navController: NavController
                             strokeWidth = 4f
                         )
                         val flipped = workSessions.size > 6 // Flip dates vertically if there are too many
-                        val labelOffset = if (flipped) 40.dp.toPx() else 20.dp.toPx() // Adjust label offset
-                        val dateYOffset = if (flipped) 30.dp.toPx() else 10.dp.toPx() // Adjust date offset
 
                         // Draw X-axis labels (dates from `workSessions`)
                         reversedWorkSessions.forEachIndexed { index, session ->

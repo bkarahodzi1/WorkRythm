@@ -1,9 +1,11 @@
 package com.example.worktimechecker.view
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -116,12 +118,16 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     var hasNotificationPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            mutableStateOf(
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            )
+        } else {
+            mutableStateOf(true)
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -147,7 +153,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
             usersViewModel.getUserByEmail(currentUser.email!!)
         }
         workSessionViewModel.setSessionsForWeek(user!!.email)
-        if(workSessionViewModel.checkPaused(user!!.email)){
+        if(workSession2 != null && workSessionViewModel.checkPaused(user!!.email)){
             isPaused = true
         }
         if(hasNotificationPermission)
@@ -262,7 +268,12 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                     showDialog = true
                                 }
                                 else
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                    else{
+                                        isEnabled = true
+                                    }
                             }
                         )
                         Spacer(Modifier.width(8.dp))
@@ -278,7 +289,6 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
         ) {
             Scaffold(
                 topBar = {
-                    val coroutineScope = rememberCoroutineScope()
                     TopAppBar(
                         modifier = Modifier
                             .background(Color(0xFFe0e681))
@@ -355,7 +365,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                 else if (hasNotificationPermission){
                                     alarmItem = AlarmItem(
                                         time = LocalDateTime.now()
-                                            .plusSeconds(5),
+                                            .plusHours(1),
                                         message = "Consider taking a break"
                                     )
                                     alarmItem?.let(scheduler::schedule)
@@ -376,23 +386,25 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                             onClick = {
                                 coroutineScope.launch {
                                     val resultOfEndingDay = workSessionViewModel.pauseTime(authViewModel.getCurrentUser()?.email.toString(), LocalTime.now().toNanoOfDay() / 1000000)
-                                    if(resultOfEndingDay == 0) {
-                                        Toast.makeText(
-                                            context,
-                                            "Session hasn't been started yet",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                    else if(resultOfEndingDay == 2){
-                                        Toast.makeText(
-                                            context,
-                                            "Session has already been ended",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                    else{
-                                        isPaused = true
-                                        alarmItem?.let(scheduler::cancel)
+                                    when (resultOfEndingDay) {
+                                        0 -> {
+                                            Toast.makeText(
+                                                context,
+                                                "Session hasn't been started yet",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                        2 -> {
+                                            Toast.makeText(
+                                                context,
+                                                "Session has already been ended",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                        else -> {
+                                            isPaused = true
+                                            alarmItem?.let(scheduler::cancel)
+                                        }
                                     }
                                 } },
                             enabled = authState.value != AuthState.Loading
@@ -412,7 +424,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                 }
                                 alarmItem = AlarmItem(
                                     time = LocalDateTime.now()
-                                        .plusSeconds(5),
+                                        .plusHours(1),
                                     message = "test"
                                 )
                                 alarmItem?.let(scheduler::schedule)
@@ -592,6 +604,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                     )
                     {
                         items(workSessions) { session ->
+                            if (session.date == "1900-01-01") return@items
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -683,7 +696,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                                     modifier = Modifier.weight(1f),
                                 )
                                 Text(
-                                    text = formatTime((session.pausedForTimes.sum().toDouble() / session.pausedForTimes.size).toLong()).toString(),
+                                    text = formatTime((session.pausedForTimes.sum().toDouble() / session.pausedForTimes.size).toLong()),
                                     modifier = Modifier.weight(1f),
                                 )
                             }
@@ -695,6 +708,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
     }
 }
 
+@SuppressLint("DefaultLocale")
 fun formatTime(timeInMillis: Long): String {
     if (timeInMillis == 0L)
         return ""

@@ -24,7 +24,7 @@ class WorkSessionViewModel: ViewModel() {
     private val _workSessions = MutableStateFlow<List<WorkSession>>(emptyList())
     val workSessions: StateFlow<List<WorkSession>> = _workSessions
 
-    private var _workSessionsState = MutableStateFlow<Int>(0)
+    private var _workSessionsState = MutableStateFlow(0)
     val workSessionsState: StateFlow<Int> = _workSessionsState
 
     private val db = Firebase.firestore
@@ -49,6 +49,7 @@ class WorkSessionViewModel: ViewModel() {
     fun setSessions(currentUserEmail: String){
         db.collection("users").document(currentUserEmail)
             .collection("workSessions")
+            .whereGreaterThanOrEqualTo("date", "1900-01-02")
             .orderBy("date", Query.Direction.DESCENDING)
             .addSnapshotListener{ value, error ->
                 if(error != null){
@@ -62,8 +63,6 @@ class WorkSessionViewModel: ViewModel() {
     }
 
     fun setSessionsForThisMonth(currentUserEmail: String){
-        var year = LocalDate.now().year
-        var month = LocalDate.now().monthValue
 
         db.collection("users").document(currentUserEmail)
             .collection("workSessions")
@@ -163,16 +162,21 @@ class WorkSessionViewModel: ViewModel() {
     }
 
     suspend fun checkPaused(currentUserEmail: String): Boolean{
-        val document = db.collection("users")
-            .document(currentUserEmail)
-            .collection("workSessions")
-            .document(LocalDate.now().toString())
-            .get()
-            .await()
-        if(document.getLong("pauseStartTime") == null){
-            return false
+        try{
+            val document = db.collection("users")
+                .document(currentUserEmail)
+                .collection("workSessions")
+                .document(LocalDate.now().toString())
+                .get()
+                .await()
+            if (document.getLong("pauseStartTime") == null) {
+                return false
+            }
+            return document.getLong("pauseStartTime") != 0L
+        }catch (e: Exception){
+            val e2 = e.message
         }
-        return document.getLong("pauseStartTime") != 0L
+        return false
     }
 
     suspend fun continueTime(currentUserEmail: String, currentTime: Long){
